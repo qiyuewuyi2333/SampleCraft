@@ -29,6 +29,9 @@ namespace SampleCraft
 	float have_past_time = 0.0f;
 
 	bool is_face_cull = false;
+	glm::vec4 day_color = { 0.52f, 0.80f, 0.98f, 1.0f };
+	glm::vec4 night_color = { 0.074f, 0.274f, 0.584f, 1.0f };
+
 	void mouseCallback(GLFWwindow* window, double xposIn, double yposIn)
 	{
 		float xpos = static_cast<float>(xposIn);
@@ -59,7 +62,7 @@ namespace SampleCraft
 		glViewport(0, 0, width, height);
 	}
 
-	Application* singleton = nullptr;
+	Application* Application::singleton = nullptr;
 
 	Application::Application()
 	{
@@ -69,6 +72,14 @@ namespace SampleCraft
 	Application::~Application()
 	{
 		delete	camera;
+		delete	shader_manager;
+		delete	texture_manager;
+		delete	renderer;
+		delete	block;
+		delete	step;
+		delete	sun;
+		delete  oak_log;
+		delete  stair;
 		glfwTerminate();
 
 	}
@@ -121,6 +132,8 @@ namespace SampleCraft
 
 		glEnable(GL_BLEND);
 
+		
+
 	}
 
 	void Application::processInput(GLFWwindow* window, Camera* m_camera)
@@ -144,52 +157,110 @@ namespace SampleCraft
 	}
 	void Application::init()
 	{
-		camera = new Camera(glm::vec3(0.0f,2.0f,0.0f));
 		openGLInit();
+
+		camera = new Camera(glm::vec3(0.0f, 2.0f, 0.0f));
+		shader_manager = ShaderManager::createShaderManager();
+		texture_manager = TextureManager::createTextureManager();
+		renderer = Renderer::createRenderer();
+		block = new Block();
+		step = new Step();
+		sun = new Sun();
+		oak_log = new OakLog();
+		stair = new Stair();
 	}
+	void Application::drawLight()
+	{
+		shader_manager->light_shader->use();
+		glm::mat4 view = camera->getLookAt();
+		glm::mat4 projection = glm::perspective(glm::radians(camera->m_zoom),
+			(float)screen_width / (float)screen_height, 0.1f, 100.0f);
+		glm::mat4 model = glm::translate(glm::mat4(1.0f), sun->getPosition(have_past_time));
+		model = glm::scale(model, glm::vec3(2.0f, 2.0f, 2.0f));
+		shader_manager->light_shader->setMat4("view", view);
+		shader_manager->light_shader->setMat4("projection", projection);
+		shader_manager->light_shader->setMat4("model", model);
+		renderer->draw(block->getVertexArray(), shader_manager->light_shader);
+		model = glm::translate(glm::mat4(1.0f), sun->getLunaPosition(have_past_time));
+		shader_manager->light_shader->setMat4("model", model);
+		renderer->draw(block->getVertexArray(), shader_manager->light_shader);
+	}
+	void Application::drawNormalBlock()
+	{
+		shader_manager->normal_shader->use();
+
+		//设置通用矩阵
+		glm::mat4 view = camera->getLookAt();
+		glm::mat4 projection = glm::perspective(glm::radians(camera->m_zoom),
+			(float)screen_width / (float)screen_height, 0.1f, 100.0f);
+		shader_manager->normal_shader->setMat4("u_view", view);
+		shader_manager->normal_shader->setMat4("u_projection", projection);
+		//设置光照
+		shader_manager->normal_shader->setVec3("u_light_color", sun->getLightStrength());
+		shader_manager->normal_shader->setVec3("u_light_pos", sun->getPosition(have_past_time));
+		if(sun->getLunaPosition(have_past_time).y>0.0f)
+		{
+			shader_manager->normal_shader->setVec3("u_luna_light_color",  sun->getLunaLightStrength());
+			shader_manager->normal_shader->setVec3("u_luna_light_pos", sun->getLunaPosition(have_past_time));
+		}else
+		{
+			shader_manager->normal_shader->setVec3("u_luna_light_color", glm::vec3(0.0f,0.0f,0.0f));
+			shader_manager->normal_shader->setVec3("u_luna_light_pos", sun->getLunaPosition(have_past_time));
+		}
+		//draw snow floor
+		//设置纹理
+		shader_manager->normal_shader->setInt("u_texture", texture_manager->snow_texture);
+		for(int i = -20;i<=20;++i)
+		{
+			for(int j = -20;j<=20;j++)
+			{
+				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(i, 0.0f, j));
+				shader_manager->normal_shader->setMat4("u_model", model);
+				//求 转置矩阵的逆矩阵
+				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
+				renderer->draw(block->getVertexArray(), shader_manager->normal_shader);
+			}
+		}
+
+		//draw the tree's log(main body)
+		//设置纹理 先边后顶
+		for(int j = 1;j<=4;++j)
+		{
+			glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, j, 0.0f));
+			shader_manager->normal_shader->setMat4("u_model", model);
+			shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
+			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_side_texture);
+			renderer->draw(oak_log->getVertexArraySide(), shader_manager->normal_shader);
+			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_top_texture);
+			renderer->draw(oak_log->getVertexArrayTop(), shader_manager->normal_shader);
+		}
+
+
+	}
+
+
+	void Application::drawTrans()
+	{
+
+		shader_manager->leaves_shader->use();
+		shader_manager->leaves_shader->setVec3("u_light_color", glm::vec3(20.0, 20.0, 18.0));
+
+	}
+
 	void Application::run()
 	{
-		Shader normal_block_shader("./shaders/block/normal/normal_block.vert",
-			"./shaders/block/normal/normal_block.frag");
-		Shader test_shader("./shaders/block/normal/test.vert",
-			"./shaders/block/normal/test.frag");
-		Shader light_shader("./shaders/block/light_source/light_source.vert",
-			"./shaders/block/light_source/light_source.frag");
-		Shader log_shader("./shaders/block/log/log.vert",
-			"./shaders/block/log/log.frag");
-		Shader leaves_shader("./shaders/block/leave/leave.vert",
-			"./shaders/block/leave/leave.frag");
-
-		Block block;
-		Step step;
-		Sun sun;
-		OakLog oak_log;
-		Stair stair;
-		Renderer renderer;
-		TextureManager texture_manager;
-		
-		unsigned snow_texture = texture_manager.loadTexture2D("./resource/textures/blocks/snow/snow.png");
-		unsigned oak_planks_texture = texture_manager.loadTexture2D("./resource/textures/blocks/oak_planks/oak_planks.png");
-		unsigned oak_log_side_texture = texture_manager.loadTexture2D("./resource/textures/blocks/oak_log/oak_log.png");
-		unsigned oak_log_top_texture = texture_manager.loadTexture2D("./resource/textures/blocks/oak_log/oak_log_top.png");
-		unsigned leaves_texture = texture_manager.loadTexture2D("./resource/textures/blocks/leaves/spruce_leaves.png");
-		texture_manager.bind(GL_TEXTURE_2D, 0, snow_texture);
-		texture_manager.bind(GL_TEXTURE_2D, 1, oak_planks_texture);
-		texture_manager.bind(GL_TEXTURE_2D, 2, oak_log_side_texture);
-		texture_manager.bind(GL_TEXTURE_2D, 3, oak_log_top_texture);
-		texture_manager.bind(GL_TEXTURE_2D, 4, leaves_texture);
-
-		test_shader.use();
-		test_shader.setVec3("u_light_color", glm::vec3(20.0, 20.0, 18.0));
-		log_shader.use();
-		log_shader.setVec3("u_light_color", glm::vec3(20.0, 20.0, 18.0));
-		leaves_shader.use();
-		leaves_shader.setVec3("u_light_color", glm::vec3(20.0, 20.0, 18.0));
+		glm::vec3 light_pos = { 0.0f,50.0f,0.0f };
 
 		while (!glfwWindowShouldClose(m_window))
 		{
-			glClearColor(0.52f, 0.80f, 0.98f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			if(sun->getPosition(have_past_time).y>0.0f)
+			{
+				renderer->clear(day_color);
+			}
+			else
+			{
+				renderer->clear(night_color);
+			}
 			processInput(m_window, camera);
 			current_time = glfwGetTime();
 			delta_time = current_time - last_time;
@@ -199,77 +270,18 @@ namespace SampleCraft
 			}
 			last_time = current_time;
 			have_past_time += delta_time;
-
-			glm::mat4 view = camera->getLookAt();
-			glm::mat4 projection = glm::perspective(glm::radians(camera->m_zoom), (float)screen_width / (float)screen_height, 0.1f, 100.0f);
-			glm::vec3 light_pos = { 0.0f,50.0f,0.0f };
-
-			light_shader.use();
-			glm::mat4 light_model = glm::translate(glm::mat4(1.0f), sun.getPosition(have_past_time));
-			light_shader.setMat4("view", view);
-			light_shader.setMat4("projection", projection);
-			light_shader.setMat4("model", light_model);
-			renderer.draw(block.getVertexArray(), light_shader);
-
-			test_shader.use();
-			test_shader.setInt("u_test_texture", 0);
-			test_shader.setMat4("u_projection", projection);
-			test_shader.setMat4("u_view", view);
-			test_shader.setVec3("u_light_pos", sun.getPosition(have_past_time));
-			for(int i = -20;i<=20;++i)
-			{
-				for(int j = -20;j<=20;++j)
-				{
-					glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(i, 0, j));
-					test_shader.setMat4("u_model", model);
-					glm::mat4 tr_in_model = glm::transpose(glm::inverse(model));
-					test_shader.setMat4("u_tr_in_model", tr_in_model);
-					renderer.draw(block.getVertexArray(), test_shader);
-				}
-			}
-
-			glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 3.0f, 0.0f));
-			test_shader.setMat4("u_model", model);
-			glm::mat4 tr_in_model = glm::transpose(glm::inverse(model));
-			test_shader.setMat4("u_tr_in_model", tr_in_model);
-			test_shader.setInt("u_test_texture", 1);
-			renderer.draw(step.getVertexArray(), test_shader);
-
-			model = glm::translate(glm::mat4(1.0f), glm::vec3(3, 1, 0));
-			test_shader.setMat4("u_model", model);
-			tr_in_model = glm::transpose(glm::inverse(model));
-			test_shader.setMat4("u_tr_in_model", tr_in_model);
-			test_shader.setInt("u_test_texture", 2);
-			renderer.draw(oak_log.getVertexArraySide(), test_shader);
-			test_shader.setInt("u_test_texture", 3);
-			renderer.draw(oak_log.getVertexArrayTop(), test_shader);
-
-			model = glm::translate(glm::mat4(1.0f), glm::vec3(6, 1, 0));
-			test_shader.setMat4("u_model", model);
-			tr_in_model = glm::transpose(glm::inverse(model));
-			test_shader.setMat4("u_tr_in_model", tr_in_model);
-			test_shader.setInt("u_test_texture", 1);
-			renderer.draw(stair.getVertexArray(), test_shader);
-
-			leaves_shader.use();
-			leaves_shader.setMat4("u_projection", projection);
-			leaves_shader.setMat4("u_view", view);
-			leaves_shader.setVec3("u_light_pos", sun.getPosition(have_past_time));
-			leaves_shader.setInt("u_test_texture", 4);
-			leaves_shader.setVec3("u_leave_color", glm::vec3(0.0f, 1.0f, 0.0f));
-			model = glm::translate(glm::mat4(1.0f), glm::vec3(5, 1, 0));
-			leaves_shader.setMat4("u_model", model);
-			tr_in_model = glm::transpose(glm::inverse(model));
-			leaves_shader.setMat4("u_tr_in_model", tr_in_model);
-			renderer.draw(block.getVertexArray(), leaves_shader);
-
+			std::cout <<"\n x: " <<camera->m_position.x
+					  <<"\n y: "<< camera->m_position.y
+					  <<"\n z: "<< camera->m_position.z;
+			
+			drawLight();
+			drawNormalBlock();
+			drawTrans();
 
 			glfwSwapBuffers(m_window);
 			glfwPollEvents();
 		}
 	}
 
-	
 
-	
 }

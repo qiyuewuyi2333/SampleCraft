@@ -14,8 +14,11 @@ namespace SampleCraft
 		int m_bit_per_pixel;
 		int m_width;
 		int m_height;
-
+	private:
+		static TextureManager* singleton;
 	public:
+		static TextureManager* createTextureManager();
+		
 		TextureManager();
 		~TextureManager();
 
@@ -24,6 +27,12 @@ namespace SampleCraft
 		void bind(GLenum texture_type, unsigned slot, unsigned texture_id) const;
 		void unbind(GLenum texture_type) const;
 
+	public:
+		unsigned snow_texture;
+		unsigned oak_planks_texture;
+		unsigned oak_log_side_texture;
+		unsigned oak_log_top_texture;
+		unsigned leaves_texture;
 	};
 	
 }

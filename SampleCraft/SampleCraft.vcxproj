@@ -150,6 +150,7 @@
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="render\Renderer.cpp" />
     <ClCompile Include="tools\Camera.cpp" />
+    <ClCompile Include="render\ShaderManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="head\Application.h" />
@@ -164,6 +165,7 @@
     <ClInclude Include="head\render\VertexArray.h" />
     <ClInclude Include="head\render\VertexBuffer.h" />
     <ClInclude Include="head\render\VertexBufferLayout.h" />
+    <ClInclude Include="head\ShaderManager.h" />
     <ClInclude Include="head\tools\Camera.h" />
     <ClInclude Include="head\entities\blocks\Block.h" />
     <ClInclude Include="head\entities\Entity.h" />
@@ -178,10 +180,8 @@
     <None Include="shaders\block\light_source\light_source.vert" />
     <None Include="shaders\block\log\log.frag" />
     <None Include="shaders\block\log\log.vert" />
-    <None Include="shaders\block\normal\normal_block.frag" />
-    <None Include="shaders\block\normal\normal_block.vert" />
-    <None Include="shaders\block\normal\test.frag" />
-    <None Include="shaders\block\normal\test.vert" />
+    <None Include="shaders\block\normal\normal.frag" />
+    <None Include="shaders\block\normal\normal.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\texture\VanillaDefault+1.20.1\assets\minecraft\textures\block\glass.png" />

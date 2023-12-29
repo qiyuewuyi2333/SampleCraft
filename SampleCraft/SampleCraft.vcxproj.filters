@@ -66,6 +66,9 @@
     <ClCompile Include="entities\blocks\OakLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="render\ShaderManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="head\Application.h">
@@ -122,14 +125,15 @@
     <ClInclude Include="head\entities\particles\ParticleSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="head\ShaderManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\block\normal\normal_block.frag" />
-    <None Include="shaders\block\normal\normal_block.vert" />
     <None Include="shaders\block\light_source\light_source.vert" />
     <None Include="shaders\block\light_source\light_source.frag" />
-    <None Include="shaders\block\normal\test.frag" />
-    <None Include="shaders\block\normal\test.vert" />
+    <None Include="shaders\block\normal\normal.frag" />
+    <None Include="shaders\block\normal\normal.vert" />
     <None Include="shaders\block\leave\leave.frag" />
     <None Include="shaders\block\leave\leave.vert" />
     <None Include="shaders\block\log\log.frag" />

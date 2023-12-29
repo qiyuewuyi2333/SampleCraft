@@ -22,22 +22,30 @@ namespace SampleCraft
 	{
 	}
 
+	Renderer* Renderer::singleton = nullptr;
+	Renderer* Renderer::createRenderer()
+	{
+		if (singleton == nullptr)
+			singleton = new Renderer();
+		return singleton;
+	}
+
 	void Renderer::drawInstance() const
 	{
 	}
 
 	void Renderer::drawElements(const VertexArray& vertex_array, const IndexBuffer& index_buffer,
-		const Shader& shader) const
+		const Shader* const shader) const
 	{
-		shader.use();
+		shader->use();
 		vertex_array.bind();
 		index_buffer.bind();
 		glDrawElements(GL_TRIANGLES, index_buffer.getCount(), GL_UNSIGNED_INT, nullptr);
 	}
 
-	void Renderer::draw(const VertexArray& vertex_array, const Shader& shader) const
+	void Renderer::draw(const VertexArray& vertex_array, const Shader* const shader) const
 	{
-		shader.use();
+		shader->use();
 		vertex_array.bind();
 		glDrawArrays(GL_TRIANGLES, 0, vertex_array.getCount());
 	}

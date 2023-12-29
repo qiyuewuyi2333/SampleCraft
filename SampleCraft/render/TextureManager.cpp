@@ -3,12 +3,29 @@
 
 namespace SampleCraft
 {
+    TextureManager* TextureManager::singleton = nullptr;
+	TextureManager* TextureManager::createTextureManager()
+    {
+        if (singleton == nullptr)
+            singleton = new TextureManager();
+        return singleton;
+    }
 
     TextureManager::TextureManager()
         :m_file_path(""), m_local_buffer(nullptr),
         m_width(0), m_height(0), m_bit_per_pixel(0)
     {
+        snow_texture =loadTexture2D("./resource/textures/blocks/snow/snow.png");
+        oak_planks_texture = loadTexture2D("./resource/textures/blocks/oak_planks/oak_planks.png");
+        oak_log_side_texture = loadTexture2D("./resource/textures/blocks/oak_log/oak_log.png");
+        oak_log_top_texture = loadTexture2D("./resource/textures/blocks/oak_log/oak_log_top.png");
+        leaves_texture = loadTexture2D("./resource/textures/blocks/leaves/spruce_leaves.png");
 
+        bind(GL_TEXTURE_2D, 1, snow_texture);
+        bind(GL_TEXTURE_2D, 2, oak_planks_texture);
+        bind(GL_TEXTURE_2D, 3, oak_log_side_texture);
+        bind(GL_TEXTURE_2D, 4, oak_log_top_texture);
+        bind(GL_TEXTURE_2D, 5, leaves_texture);
     }
 
     TextureManager::~TextureManager()

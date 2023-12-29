@@ -13,12 +13,18 @@ namespace SampleCraft
 			return height;
 		}
 		glm::vec3 getPosition(float have_past_time);
+		glm::vec3 getLunaPosition(float have_past_time);
 		Sun();
 		~Sun();
 	private:
 		float height;
 		float speed;
+		glm::vec3 light_strength = glm::vec3(20.0, 20.0, 18.0);
+		glm::vec3 luna_light_strength = glm::vec3(0.5, 0.5, 0.5);
 
+	public:
+		glm::vec3& getLightStrength();
+		glm::vec3& getLunaLightStrength();
 	};
 }
 

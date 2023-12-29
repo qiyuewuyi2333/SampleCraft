@@ -9,16 +9,17 @@ namespace SampleCraft
 	class Renderer
 	{
 	public:
+		static Renderer* createRenderer();
+		
 		void drawInstance() const;
-		void drawElements(const VertexArray& vertex_array, const IndexBuffer& index_buffer, const Shader& shader) const;
-		void draw(const VertexArray& vertex_array, const Shader& shader) const;
+		void drawElements(const VertexArray& vertex_array, const IndexBuffer& index_buffer, const Shader* const shader) const;
+		void draw(const VertexArray& vertex_array, const Shader* const shader) const;
 		void clear(const glm::vec4& clear_color) const;
 	public:
 		Renderer();
 		~Renderer();
 	private:
-		unsigned int renderer_id;
-
+		static Renderer* singleton;
 		
 	};
 }
