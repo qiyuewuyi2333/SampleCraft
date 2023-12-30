@@ -174,17 +174,21 @@
     <ClInclude Include="head\render\Shader.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\block\leave\leave.frag" />
-    <None Include="shaders\block\leave\leave.vert" />
+    <None Include="shaders\block\trans\trans.frag" />
+    <None Include="shaders\block\trans\trans.vert" />
     <None Include="shaders\block\light_source\light_source.frag" />
     <None Include="shaders\block\light_source\light_source.vert" />
     <None Include="shaders\block\log\log.frag" />
     <None Include="shaders\block\log\log.vert" />
     <None Include="shaders\block\normal\normal.frag" />
     <None Include="shaders\block\normal\normal.vert" />
+    <None Include="shaders\shadow\simple_depth.frag" />
+    <None Include="shaders\shadow\simple_depth.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\texture\VanillaDefault+1.20.1\assets\minecraft\textures\block\glass.png" />
+    <Image Include="..\..\..\texture\VanillaDefault+1.20.1\assets\minecraft\textures\block\stripped_birch_log.png" />
+    <Image Include="..\..\..\texture\VanillaDefault+1.20.1\assets\minecraft\textures\block\stripped_birch_log_top.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

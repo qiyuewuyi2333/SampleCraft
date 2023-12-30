@@ -7,18 +7,21 @@ layout (location = 2) in vec2 aTexCoords;
 out vec2 tex_coord;
 out vec3 norm;
 out vec3 frag_pos;
+out vec4 frag_pos_light_space;
 
 
 uniform mat4 u_model;
 uniform mat4 u_view;
 uniform mat4 u_projection;
 uniform mat4 u_tr_in_model;
+uniform mat4 u_light_space_mat;
 
 void main()
 {
     tex_coord = aTexCoords;
     norm = normalize( mat3(u_tr_in_model) * aNormal);
     frag_pos = vec3(u_model * vec4(aPos, 1.0));
+    frag_pos_light_space = u_light_space_mat * vec4(frag_pos, 1.0);
 
     gl_Position = u_projection * u_view * u_model * vec4(aPos, 1.0);
 }

@@ -24,7 +24,10 @@ namespace SampleCraft
 		void run();
 		void drawLight();
 		void drawNormalBlock();
+		void drawTransForShadow();
 		void drawTrans();
+		void drawNormalBlockForShadow();
+
 	private:
 		void openGLInit();
 		void processInput(GLFWwindow* window, Camera* m_camera);

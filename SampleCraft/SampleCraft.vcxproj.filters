@@ -134,13 +134,21 @@
     <None Include="shaders\block\light_source\light_source.frag" />
     <None Include="shaders\block\normal\normal.frag" />
     <None Include="shaders\block\normal\normal.vert" />
-    <None Include="shaders\block\leave\leave.frag" />
-    <None Include="shaders\block\leave\leave.vert" />
+    <None Include="shaders\block\trans\trans.frag" />
+    <None Include="shaders\block\trans\trans.vert" />
     <None Include="shaders\block\log\log.frag" />
     <None Include="shaders\block\log\log.vert" />
+    <None Include="shaders\shadow\simple_depth.vert" />
+    <None Include="shaders\shadow\simple_depth.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\texture\VanillaDefault+1.20.1\assets\minecraft\textures\block\glass.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\..\..\texture\VanillaDefault+1.20.1\assets\minecraft\textures\block\stripped_birch_log.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\..\..\texture\VanillaDefault+1.20.1\assets\minecraft\textures\block\stripped_birch_log_top.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

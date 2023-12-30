@@ -18,11 +18,13 @@ namespace SampleCraft
 		normal_shader = new Shader("./shaders/block/normal/normal.vert",
 			"./shaders/block/normal/normal.frag");
 		light_shader = new Shader("./shaders/block/light_source/light_source.vert",
-		"./shaders/block/light_source/light_source.frag");
+			"./shaders/block/light_source/light_source.frag");
 		log_shader = new Shader("./shaders/block/log/log.vert",
 			"./shaders/block/log/log.frag");
-		leaves_shader = new Shader("./shaders/block/leave/leave.vert",
-			"./shaders/block/leave/leave.frag");
+		trans_shader = new Shader("./shaders/block/trans/trans.vert",
+			"./shaders/block/trans/trans.frag");
+		simple_depth_shader = new Shader("./shaders/shadow/simple_depth.vert",
+			"./shaders/shadow/simple_depth.frag");
 	}
 
 	ShaderManager::~ShaderManager()
@@ -33,7 +35,9 @@ namespace SampleCraft
 			delete light_shader;
 		if (log_shader)
 			delete log_shader;
-		if (leaves_shader)
-			delete leaves_shader;
+		if (trans_shader)
+			delete trans_shader;
+		if (simple_depth_shader)
+			delete simple_depth_shader;
 	}
 }

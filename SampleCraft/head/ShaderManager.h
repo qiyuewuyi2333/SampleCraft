@@ -19,6 +19,7 @@ namespace SampleCraft
 		Shader* normal_shader = nullptr;
 		Shader* light_shader = nullptr;
 		Shader* log_shader = nullptr;
-		Shader* leaves_shader = nullptr;
+		Shader* trans_shader = nullptr;
+		Shader* simple_depth_shader = nullptr;
 	};
 }

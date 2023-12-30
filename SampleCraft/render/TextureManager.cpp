@@ -20,12 +20,20 @@ namespace SampleCraft
         oak_log_side_texture = loadTexture2D("./resource/textures/blocks/oak_log/oak_log.png");
         oak_log_top_texture = loadTexture2D("./resource/textures/blocks/oak_log/oak_log_top.png");
         leaves_texture = loadTexture2D("./resource/textures/blocks/leaves/spruce_leaves.png");
+        glass_texture = loadTexture2D("./resource/textures/blocks/glass/glass.png");
+        stripped_birch_log_texture = loadTexture2D("./resource/textures/blocks/stripped_log/stripped_birch_log.png");
+        stripped_birch_log_top_texture = loadTexture2D("./resource/textures/blocks/stripped_log/stripped_birch_log_top.png");
+        shadow_map = loadTextureShadow();
 
         bind(GL_TEXTURE_2D, 1, snow_texture);
         bind(GL_TEXTURE_2D, 2, oak_planks_texture);
         bind(GL_TEXTURE_2D, 3, oak_log_side_texture);
         bind(GL_TEXTURE_2D, 4, oak_log_top_texture);
         bind(GL_TEXTURE_2D, 5, leaves_texture);
+        bind(GL_TEXTURE_2D, 6, glass_texture);
+        bind(GL_TEXTURE_2D, 7, stripped_birch_log_texture);
+        bind(GL_TEXTURE_2D, 8, stripped_birch_log_top_texture);
+        bind(GL_TEXTURE_2D, 9, shadow_map);
     }
 
     TextureManager::~TextureManager()
@@ -90,6 +98,22 @@ namespace SampleCraft
 
         m_renderer_ids.push_back(textureID);
         return textureID;
+    }
+
+    GLuint TextureManager::loadTextureShadow()
+    {
+        GLuint depth_map;
+        glGenTextures(1, &depth_map);
+        glBindTexture(GL_TEXTURE_2D, depth_map);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT,
+            0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+		m_renderer_ids.push_back(depth_map);
+        return depth_map;
     }
 
     void TextureManager::bind(GLenum texture_type, unsigned slot, unsigned texture_id) const
