@@ -25,6 +25,8 @@ namespace SampleCraft
 			"./shaders/block/trans/trans.frag");
 		simple_depth_shader = new Shader("./shaders/shadow/simple_depth.vert",
 			"./shaders/shadow/simple_depth.frag");
+		shadow_debug_shader = new Shader("./shaders/shadow_debug/shadow_debug.vert",
+			"./shaders/shadow_debug/shadow_debug.frag");
 	}
 
 	ShaderManager::~ShaderManager()
@@ -39,5 +41,7 @@ namespace SampleCraft
 			delete trans_shader;
 		if (simple_depth_shader)
 			delete simple_depth_shader;
+		if (shadow_debug_shader)
+			delete shadow_debug_shader;
 	}
 }

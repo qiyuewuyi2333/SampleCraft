@@ -21,5 +21,6 @@ namespace SampleCraft
 		Shader* log_shader = nullptr;
 		Shader* trans_shader = nullptr;
 		Shader* simple_depth_shader = nullptr;
+		Shader* shadow_debug_shader = nullptr;
 	};
 }

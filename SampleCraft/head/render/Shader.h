@@ -14,8 +14,10 @@ namespace SampleCraft
     {
     public:
         unsigned int m_renderer_id;
+        unsigned int vertex, fragment;
 
         Shader(const char* vertexPath, const char* fragmentPath);
+        ~Shader();
         void use() const;
 
         void setBool(const std::string& name, bool value);

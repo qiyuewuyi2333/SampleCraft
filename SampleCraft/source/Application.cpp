@@ -14,13 +14,17 @@
 
 namespace SampleCraft
 {
+	unsigned int quadVAO = 0;
+	unsigned int quadVBO;
+	void renderQuad();
+
 	Camera* camera = nullptr;
 	const unsigned int SCR_WIDTH = 1500;
 	const unsigned int SCR_HEIGHT = 900;
 
 	float lastX = (float)SCR_WIDTH / 2.0;
 	float lastY = (float)SCR_HEIGHT / 2.0;
-	bool firstMouse = true;
+	bool first_mouse = true;
 
 	// timing
 	float delta_time = 0.0f;
@@ -32,15 +36,16 @@ namespace SampleCraft
 	glm::vec4 day_color = { 0.52f, 0.80f, 0.98f, 1.0f };
 	glm::vec4 night_color = { 0.074f, 0.274f, 0.584f, 1.0f };
 
+
 	void mouseCallback(GLFWwindow* window, double xposIn, double yposIn)
 	{
 		float xpos = static_cast<float>(xposIn);
 		float ypos = static_cast<float>(yposIn);
-		if (firstMouse)
+		if (first_mouse)
 		{
 			lastX = xpos;
 			lastY = ypos;
-			firstMouse = false;
+			first_mouse = false;
 		}
 
 		float xoffset = xpos - lastX;
@@ -50,6 +55,23 @@ namespace SampleCraft
 		lastY = ypos;
 
 		camera->processMouse(xoffset, yoffset);
+	}
+	void controlTranslateCallback(GLFWwindow* window, double xposIn, double yposIn)
+	{
+		float xpos = static_cast<float>(xposIn);
+		float ypos = static_cast<float>(yposIn);
+		if (first_mouse)
+		{
+			lastX = xpos;
+			lastY = ypos;
+			first_mouse = false;
+		}
+
+		float xoffset = xpos - lastX;
+		float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+
+		lastX = xpos;
+		lastY = ypos;
 	}
 
 	void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
@@ -80,6 +102,7 @@ namespace SampleCraft
 		delete	sun;
 		delete  oak_log;
 		delete  stair;
+
 		glfwTerminate();
 
 	}
@@ -154,6 +177,18 @@ namespace SampleCraft
 			m_camera->processKeyBoard(DOWN, delta_time);
 		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
 			m_camera->processKeyBoard(UP, delta_time);
+		if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+		{
+			control_model = true;
+			depth_quad_model = false;
+			first_mouse = true;
+		}
+		if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+		{
+			control_model = false;
+			depth_quad_model = true;
+			first_mouse = true;
+		}
 	}
 
 	void Application::init()
@@ -183,9 +218,6 @@ namespace SampleCraft
 		shader_manager->light_shader->setMat4("projection", projection);
 		shader_manager->light_shader->setMat4("model", model);
 		renderer->draw(block->getVertexArray(), shader_manager->light_shader);
-		model = glm::translate(glm::mat4(1.0f), sun->getLunaPosition(have_past_time));
-		shader_manager->light_shader->setMat4("model", model);
-		renderer->draw(block->getVertexArray(), shader_manager->light_shader);
 	}
 	//绘制不透明物体
 	void Application::drawNormalBlock()
@@ -201,15 +233,7 @@ namespace SampleCraft
 		//设置光照
 		shader_manager->normal_shader->setVec3("u_light_color", sun->getLightStrength());
 		shader_manager->normal_shader->setVec3("u_light_pos", sun->getPosition(have_past_time));
-		if(sun->getLunaPosition(have_past_time).y>0.0f)
-		{
-			shader_manager->normal_shader->setVec3("u_luna_light_color",  sun->getLunaLightStrength());
-			shader_manager->normal_shader->setVec3("u_luna_light_pos", sun->getLunaPosition(have_past_time));
-		}else
-		{
-			shader_manager->normal_shader->setVec3("u_luna_light_color", glm::vec3(0.0f,0.0f,0.0f));
-			shader_manager->normal_shader->setVec3("u_luna_light_pos", sun->getLunaPosition(have_past_time));
-		}
+		
 		//draw snow floor
 		//设置纹理
 		shader_manager->normal_shader->setInt("u_texture", texture_manager->snow_texture);
@@ -445,8 +469,6 @@ namespace SampleCraft
 	{
 
 		shader_manager->trans_shader->use();
-		shader_manager->trans_shader->setVec3("u_light_color", glm::vec3(20.0, 20.0, 18.0));
-		shader_manager->trans_shader->use();
 
 		//设置通用矩阵
 		glm::mat4 view = camera->getLookAt();
@@ -457,16 +479,7 @@ namespace SampleCraft
 		//设置光照
 		shader_manager->trans_shader->setVec3("u_light_color", sun->getLightStrength());
 		shader_manager->trans_shader->setVec3("u_light_pos", sun->getPosition(have_past_time));
-		if (sun->getLunaPosition(have_past_time).y > 0.0f)
-		{
-			shader_manager->trans_shader->setVec3("u_luna_light_color", sun->getLunaLightStrength());
-			shader_manager->trans_shader->setVec3("u_luna_light_pos", sun->getLunaPosition(have_past_time));
-		}
-		else
-		{
-			shader_manager->trans_shader->setVec3("u_luna_light_color", glm::vec3(0.0f, 0.0f, 0.0f));
-			shader_manager->trans_shader->setVec3("u_luna_light_pos", sun->getLunaPosition(have_past_time));
-		}
+		
 
 		// draw the tree's leaves
 		shader_manager->trans_shader->setInt("u_texture", texture_manager->leaves_texture);
@@ -508,39 +521,16 @@ namespace SampleCraft
 	//绘制不透明物体
 	void Application::drawNormalBlockForShadow()
 	{
-		shader_manager->normal_shader->use();
+		shader_manager->simple_depth_shader->use();
 
-		//设置通用矩阵
-		glm::mat4 view = camera->getLookAt();
-		glm::mat4 projection = glm::perspective(glm::radians(camera->m_zoom),
-			(float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-		shader_manager->normal_shader->setMat4("u_view", view);
-		shader_manager->normal_shader->setMat4("u_projection", projection);
-		//设置光照
-		shader_manager->normal_shader->setVec3("u_light_color", sun->getLightStrength());
-		shader_manager->normal_shader->setVec3("u_light_pos", sun->getPosition(have_past_time));
-		if (sun->getLunaPosition(have_past_time).y > 0.0f)
-		{
-			shader_manager->normal_shader->setVec3("u_luna_light_color", sun->getLunaLightStrength());
-			shader_manager->normal_shader->setVec3("u_luna_light_pos", sun->getLunaPosition(have_past_time));
-		}
-		else
-		{
-			shader_manager->normal_shader->setVec3("u_luna_light_color", glm::vec3(0.0f, 0.0f, 0.0f));
-			shader_manager->normal_shader->setVec3("u_luna_light_pos", sun->getLunaPosition(have_past_time));
-		}
-		//draw snow floor
-		//设置纹理
-		shader_manager->normal_shader->setInt("u_texture", texture_manager->snow_texture);
 		for (int i = -20; i <= 20; ++i)
 		{
 			for (int j = -20; j <= 40; j++)
 			{
 				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(i, 0.0f, j));
-				shader_manager->normal_shader->setMat4("u_model", model);
-				//求 转置矩阵的逆矩阵
-				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-				renderer->draw(block->getVertexArray(), shader_manager->normal_shader);
+				shader_manager->simple_depth_shader->setMat4("u_model", model);
+
+				renderer->draw(block->getVertexArray(), shader_manager->simple_depth_shader);
 			}
 		}
 
@@ -549,24 +539,19 @@ namespace SampleCraft
 		for (int j = 1; j <= 4; ++j)
 		{
 			glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, j, 0.0f));
-			shader_manager->normal_shader->setMat4("u_model", model);
-			shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_side_texture);
-			renderer->draw(oak_log->getVertexArraySide(), shader_manager->normal_shader);
-			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_top_texture);
-			renderer->draw(oak_log->getVertexArrayTop(), shader_manager->normal_shader);
+			shader_manager->simple_depth_shader->setMat4("u_model", model);
+			renderer->draw(oak_log->getVertexArraySide(), shader_manager->simple_depth_shader);
+			renderer->draw(oak_log->getVertexArrayTop(), shader_manager->simple_depth_shader);
 		}
 
 
 		// 木板
 		for (int i = -14; i <= 4; i++) {
 			for (int j = 5; j <= 18; j++) {
-				shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_planks_texture);
 				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(i, 1, j));
 
-				shader_manager->normal_shader->setMat4("u_model", model);
-				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-				renderer->draw(step->getVertexArray(), shader_manager->normal_shader);
+				shader_manager->simple_depth_shader->setMat4("u_model", model);
+				renderer->draw(step->getVertexArray(), shader_manager->simple_depth_shader);
 			}
 		}
 
@@ -577,9 +562,8 @@ namespace SampleCraft
 			for (int i = 5; i >= -15; --i)
 			{
 				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(i, j, k)) * glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-				shader_manager->normal_shader->setMat4("u_model", model);
-				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-				renderer->draw(stair->getVertexArray(), shader_manager->normal_shader);
+				shader_manager->simple_depth_shader->setMat4("u_model", model);
+				renderer->draw(stair->getVertexArray(), shader_manager->simple_depth_shader);
 			}
 		}
 		for (int j = 6; j <= 11; ++j)
@@ -588,25 +572,21 @@ namespace SampleCraft
 			for (int i = 5; i >= -15; --i)
 			{
 				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(i, j, k));
-				shader_manager->normal_shader->setMat4("u_model", model);
-				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-				renderer->draw(stair->getVertexArray(), shader_manager->normal_shader);
+				shader_manager->simple_depth_shader->setMat4("u_model", model);
+				renderer->draw(stair->getVertexArray(), shader_manager->simple_depth_shader);
 			}
 		}
 		//draw the plank of the eaves
-		shader_manager->normal_shader->setInt("u_texture", texture_manager->stripped_birch_log_texture);
 		for (int j = 6; j <= 10; ++j)
 		{
 			for (int k = 9 - 6 + j; k <= 18 + 6 - j; ++k)
 			{
 				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(3, j, k));
-				shader_manager->normal_shader->setMat4("u_model", model);
-				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-				renderer->draw(block->getVertexArray(), shader_manager->normal_shader);
+				shader_manager->simple_depth_shader->setMat4("u_model", model);
+				renderer->draw(block->getVertexArray(), shader_manager->simple_depth_shader);
 				model = glm::translate(glm::mat4(1.0f), glm::vec3(-13, j, k));
-				shader_manager->normal_shader->setMat4("u_model", model);
-				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-				renderer->draw(block->getVertexArray(), shader_manager->normal_shader);
+				shader_manager->simple_depth_shader->setMat4("u_model", model);
+				renderer->draw(block->getVertexArray(), shader_manager->simple_depth_shader);
 			}
 		}
 		//draw the plank step on the top front of the house
@@ -615,9 +595,8 @@ namespace SampleCraft
 			for (int k = 5; k <= 8; ++k)
 			{
 				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(i, 6, k));
-				shader_manager->normal_shader->setMat4("u_model", model);
-				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-				renderer->draw(step->getVertexArray(), shader_manager->normal_shader);
+				shader_manager->simple_depth_shader->setMat4("u_model", model);
+				renderer->draw(step->getVertexArray(), shader_manager->simple_depth_shader);
 			}
 		}
 		// 从下往上 第一层柱子 4棵
@@ -626,59 +605,41 @@ namespace SampleCraft
 			for (int j = 1; j <= 5; j++)
 			{
 				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(4 - i * 6, j, 5));
-				shader_manager->normal_shader->setMat4("u_model", model);
-				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-				shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_side_texture);
-				renderer->draw(oak_log->getVertexArraySide(), shader_manager->normal_shader);
-				shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_top_texture);
-				renderer->draw(oak_log->getVertexArrayTop(), shader_manager->normal_shader);
+				shader_manager->simple_depth_shader->setMat4("u_model", model);
+				renderer->draw(oak_log->getVertexArraySide(), shader_manager->simple_depth_shader);
+				renderer->draw(oak_log->getVertexArrayTop(), shader_manager->simple_depth_shader);
 			}
 		}
 
 		// 从下往上 第一层柱子 2棵
 		for (int j = 1; j <= 5; j++) {
 			glm::mat4 model1 = glm::translate(glm::mat4(1.0f), glm::vec3(4, j, 8));
-			shader_manager->normal_shader->setMat4("u_model", model1);
-			shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model1)));
-			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_side_texture);
-			renderer->draw(oak_log->getVertexArraySide(), shader_manager->normal_shader);
-			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_top_texture);
-			renderer->draw(oak_log->getVertexArrayTop(), shader_manager->normal_shader);
+			shader_manager->simple_depth_shader->setMat4("u_model", model1);
+			renderer->draw(oak_log->getVertexArraySide(), shader_manager->simple_depth_shader);
+			renderer->draw(oak_log->getVertexArrayTop(), shader_manager->simple_depth_shader);
 
 			glm::mat4 model2 = glm::translate(glm::mat4(1.0f), glm::vec3(-14, j, 8));
-			shader_manager->normal_shader->setMat4("u_model", model2);
-			shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model2)));
-			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_side_texture);
-			renderer->draw(oak_log->getVertexArraySide(), shader_manager->normal_shader);
-			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_top_texture);
-			renderer->draw(oak_log->getVertexArrayTop(), shader_manager->normal_shader);
+			shader_manager->simple_depth_shader->setMat4("u_model", model2);
+			renderer->draw(oak_log->getVertexArraySide(), shader_manager->simple_depth_shader);
+			renderer->draw(oak_log->getVertexArrayTop(), shader_manager->simple_depth_shader);
 		}
 
 		// 从下往上 第三层柱子 3棵
 		for (int j = 1; j <= 5; j++) {
 			glm::mat4 model1 = glm::translate(glm::mat4(1.0f), glm::vec3(4, j, 19));
-			shader_manager->normal_shader->setMat4("u_model", model1);
-			shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model1)));
-			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_side_texture);
-			renderer->draw(oak_log->getVertexArraySide(), shader_manager->normal_shader);
-			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_top_texture);
-			renderer->draw(oak_log->getVertexArrayTop(), shader_manager->normal_shader);
+			shader_manager->simple_depth_shader->setMat4("u_model", model1);
+			renderer->draw(oak_log->getVertexArraySide(), shader_manager->simple_depth_shader);
+			renderer->draw(oak_log->getVertexArrayTop(), shader_manager->simple_depth_shader);
 
 			glm::mat4 model2 = glm::translate(glm::mat4(1.0f), glm::vec3(-8, j, 19));
-			shader_manager->normal_shader->setMat4("u_model", model2);
-			shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model2)));
-			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_side_texture);
-			renderer->draw(oak_log->getVertexArraySide(), shader_manager->normal_shader);
-			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_top_texture);
-			renderer->draw(oak_log->getVertexArrayTop(), shader_manager->normal_shader);
+			shader_manager->simple_depth_shader->setMat4("u_model", model2);
+			renderer->draw(oak_log->getVertexArraySide(), shader_manager->simple_depth_shader);
+			renderer->draw(oak_log->getVertexArrayTop(), shader_manager->simple_depth_shader);
 
 			glm::mat4 model3 = glm::translate(glm::mat4(1.0f), glm::vec3(-14, j, 19));
-			shader_manager->normal_shader->setMat4("u_model", model3);
-			shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model3)));
-			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_side_texture);
-			renderer->draw(oak_log->getVertexArraySide(), shader_manager->normal_shader);
-			shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_log_top_texture);
-			renderer->draw(oak_log->getVertexArrayTop(), shader_manager->normal_shader);
+			shader_manager->simple_depth_shader->setMat4("u_model", model3);
+			renderer->draw(oak_log->getVertexArraySide(), shader_manager->simple_depth_shader);
+			renderer->draw(oak_log->getVertexArrayTop(), shader_manager->simple_depth_shader);
 		}
 
 		// 外围 从左下到右下
@@ -693,12 +654,9 @@ namespace SampleCraft
 				}
 
 				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(i, j, 9));
-				shader_manager->normal_shader->setMat4("u_model", model);
-				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-				shader_manager->normal_shader->setInt("u_texture", texture_manager->stripped_birch_log_texture);
-				renderer->draw(oak_log->getVertexArraySide(), shader_manager->normal_shader);
-				shader_manager->normal_shader->setInt("u_texture", texture_manager->stripped_birch_log_top_texture);
-				renderer->draw(oak_log->getVertexArrayTop(), shader_manager->normal_shader);
+				shader_manager->simple_depth_shader->setMat4("u_model", model);
+				renderer->draw(oak_log->getVertexArraySide(), shader_manager->simple_depth_shader);
+				renderer->draw(oak_log->getVertexArrayTop(), shader_manager->simple_depth_shader);
 			}
 		}
 
@@ -706,12 +664,9 @@ namespace SampleCraft
 		for (int i = 9; i <= 18; i++) {
 			for (int j = 1; j <= 5; j++) {
 				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(3, j, i));
-				shader_manager->normal_shader->setMat4("u_model", model);
-				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-				shader_manager->normal_shader->setInt("u_texture", texture_manager->stripped_birch_log_texture);
-				renderer->draw(oak_log->getVertexArraySide(), shader_manager->normal_shader);
-				shader_manager->normal_shader->setInt("u_texture", texture_manager->stripped_birch_log_top_texture);
-				renderer->draw(oak_log->getVertexArrayTop(), shader_manager->normal_shader);
+				shader_manager->simple_depth_shader->setMat4("u_model", model);
+				renderer->draw(oak_log->getVertexArraySide(), shader_manager->simple_depth_shader);
+				renderer->draw(oak_log->getVertexArrayTop(), shader_manager->simple_depth_shader);
 			}
 		}
 
@@ -719,12 +674,9 @@ namespace SampleCraft
 		for (int i = 9; i <= 18; i++) {
 			for (int j = 1; j <= 5; j++) {
 				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(-13, j, i));
-				shader_manager->normal_shader->setMat4("u_model", model);
-				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-				shader_manager->normal_shader->setInt("u_texture", texture_manager->stripped_birch_log_texture);
-				renderer->draw(oak_log->getVertexArraySide(), shader_manager->normal_shader);
-				shader_manager->normal_shader->setInt("u_texture", texture_manager->stripped_birch_log_top_texture);
-				renderer->draw(oak_log->getVertexArrayTop(), shader_manager->normal_shader);
+				shader_manager->simple_depth_shader->setMat4("u_model", model);
+				renderer->draw(oak_log->getVertexArraySide(), shader_manager->simple_depth_shader);
+				renderer->draw(oak_log->getVertexArrayTop(), shader_manager->simple_depth_shader);
 			}
 		}
 
@@ -732,65 +684,34 @@ namespace SampleCraft
 		for (int i = -13; i <= 3; i++) {
 			for (int j = 1; j <= 5; j++) {
 				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(i, j, 18));
-				shader_manager->normal_shader->setMat4("u_model", model);
-				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-				shader_manager->normal_shader->setInt("u_texture", texture_manager->stripped_birch_log_texture);
-				renderer->draw(oak_log->getVertexArraySide(), shader_manager->normal_shader);
-				shader_manager->normal_shader->setInt("u_texture", texture_manager->stripped_birch_log_top_texture);
-				renderer->draw(oak_log->getVertexArrayTop(), shader_manager->normal_shader);
+				shader_manager->simple_depth_shader->setMat4("u_model", model);
+				renderer->draw(oak_log->getVertexArraySide(), shader_manager->simple_depth_shader);
+				renderer->draw(oak_log->getVertexArrayTop(), shader_manager->simple_depth_shader);
 			}
 		}
 
 
 		// 左上角
-		shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_planks_texture);
 		glm::mat4 model5 = glm::translate(glm::mat4(1.0f), glm::vec3(4, 1, 29));
 
-		shader_manager->normal_shader->setMat4("u_model", model5);
-		shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model5)));
-		renderer->draw(step->getVertexArray(), shader_manager->normal_shader);
+		shader_manager->simple_depth_shader->setMat4("u_model", model5);
+		renderer->draw(step->getVertexArray(), shader_manager->simple_depth_shader);
 
 		// 右上角
-		shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_planks_texture);
 		glm::mat4 model6 = glm::translate(glm::mat4(1.0f), glm::vec3(-14, 1, 29));
 
-		shader_manager->normal_shader->setMat4("u_model", model6);
-		shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model6)));
-		renderer->draw(step->getVertexArray(), shader_manager->normal_shader);
+		shader_manager->simple_depth_shader->setMat4("u_model", model6);
+		renderer->draw(step->getVertexArray(), shader_manager->simple_depth_shader);
 
 	}
 	//绘制透明物体
 	void Application::drawTransForShadow()
 	{
 
-		shader_manager->trans_shader->use();
-		shader_manager->trans_shader->setVec3("u_light_color", glm::vec3(20.0, 20.0, 18.0));
-		shader_manager->trans_shader->use();
-
-		//设置通用矩阵
-		glm::mat4 view = camera->getLookAt();
-		glm::mat4 projection = glm::perspective(glm::radians(camera->m_zoom),
-			(float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-		shader_manager->trans_shader->setMat4("u_view", view);
-		shader_manager->trans_shader->setMat4("u_projection", projection);
-		//设置光照
-		shader_manager->trans_shader->setVec3("u_light_color", sun->getLightStrength());
-		shader_manager->trans_shader->setVec3("u_light_pos", sun->getPosition(have_past_time));
-		if (sun->getLunaPosition(have_past_time).y > 0.0f)
-		{
-			shader_manager->trans_shader->setVec3("u_luna_light_color", sun->getLunaLightStrength());
-			shader_manager->trans_shader->setVec3("u_luna_light_pos", sun->getLunaPosition(have_past_time));
-		}
-		else
-		{
-			shader_manager->trans_shader->setVec3("u_luna_light_color", glm::vec3(0.0f, 0.0f, 0.0f));
-			shader_manager->trans_shader->setVec3("u_luna_light_pos", sun->getLunaPosition(have_past_time));
-		}
+		shader_manager->simple_depth_shader->use();
+		
 
 		// draw the tree's leaves
-		shader_manager->trans_shader->setInt("u_texture", texture_manager->leaves_texture);
-		shader_manager->trans_shader->setVec4("u_texture_color", glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-
 		for (int k = 2; k <= 5; ++k)
 		{
 			int i = k - 5;
@@ -800,29 +721,25 @@ namespace SampleCraft
 				for (; j <= 5 - k; ++j)
 				{
 					glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(i, k, j));
-					shader_manager->trans_shader->setMat4("u_model", model);
-					shader_manager->trans_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-					renderer->draw(block->getVertexArray(), shader_manager->trans_shader);
+					shader_manager->simple_depth_shader->setMat4("u_model", model);
+					renderer->draw(block->getVertexArray(), shader_manager->simple_depth_shader);
 				}
 			}
 
 		}
 
 		//draw the glass of the house
-		shader_manager->trans_shader->setInt("u_texture", texture_manager->glass_texture);
-		shader_manager->trans_shader->setVec4("u_texture_color",
-			glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 		for (int i = -4; i < 2; ++i)
 		{
 			for (int j = 3; j < 5; ++j)
 			{
 				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(i, j, 9));
-				shader_manager->trans_shader->setMat4("u_model", model);
-				shader_manager->trans_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
-				renderer->draw(block->getVertexArray(), shader_manager->trans_shader);
+				shader_manager->simple_depth_shader->setMat4("u_model", model);
+				renderer->draw(block->getVertexArray(), shader_manager->simple_depth_shader);
 			}
 		}
 	}
+
 	void Application::run()
 	{
 		glm::vec3 light_pos = { 0.0f,50.0f,0.0f };
@@ -860,50 +777,117 @@ namespace SampleCraft
 			}
 			last_time = current_time;
 			have_past_time += delta_time;
-
 			//print the camera's coords in the console
-			if (last_camera_pos != camera->m_position)
-			{
-				std::cout << "\n x: " << (int)camera->m_position.x
-					<< "\n y: " << (int)camera->m_position.y
-					<< "\n z: " << (int)camera->m_position.z;
-			}
-			last_camera_pos = camera->m_position;
+			//if (last_camera_pos != camera->m_position)
+			//{
+			//	std::cout << "\n x: " << (int)camera->m_position.x
+			//		<< "\n y: " << (int)camera->m_position.y
+			//		<< "\n z: " << (int)camera->m_position.z;
+			//}
+			//last_camera_pos = camera->m_position;
 
 
 			// 1. 首选渲染深度贴图
 			glViewport(0, 0, texture_manager->SHADOW_WIDTH, texture_manager->SHADOW_HEIGHT);
 			glBindFramebuffer(GL_FRAMEBUFFER, depth_map_fbo);
 			glClear(GL_DEPTH_BUFFER_BIT);
-			
-			light_proj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 7.5f);
-			light_view = glm::lookAt(sun->getPosition(have_past_time), 
+			glCullFace(GL_FRONT);
+			light_proj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 20.0f);
+			light_view = glm::lookAt(0.5f*sun->getPosition(have_past_time), 
 				glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
 			lightSpaceMatrix = light_proj * light_view;
 			shader_manager->simple_depth_shader->use();
 			shader_manager->simple_depth_shader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
-			drawNormalBlock();
-			drawTrans();
-
+			drawNormalBlockForShadow();
+			drawTransForShadow();
+			glCullFace(GL_BACK);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			// 2. 像往常一样渲染场景，但这次使用深度贴图
 			glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			
-			glBindTexture(GL_TEXTURE_2D, texture_manager->shadow_map);
 			//draw the actual objects
 			drawLight();
 			shader_manager->normal_shader->use();
 			shader_manager->normal_shader->setInt("u_shadow_map", texture_manager->shadow_map);
 			shader_manager->normal_shader->setMat4("u_light_space_mat", lightSpaceMatrix);
-
 			drawNormalBlock();
+			shader_manager->trans_shader->use();
+			shader_manager->trans_shader->setInt("u_shadow_map", texture_manager->shadow_map);
+			shader_manager->trans_shader->setMat4("u_light_space_mat", lightSpaceMatrix);
 			drawTrans();
+
+			// render the debug depth quad
+			if(depth_quad_model && !control_model)
+			{
+				shader_manager->shadow_debug_shader->use();
+				shader_manager->shadow_debug_shader->setInt("depthMap", texture_manager->shadow_map);
+				shader_manager->shadow_debug_shader->setFloat("near_plane", 0.1f);
+				shader_manager->shadow_debug_shader->setFloat("far_plane", 20.0f);
+				renderQuad();
+			}
+			if(!depth_quad_model && control_model)
+			{
+				glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+				glfwSetCursorPosCallback(m_window, controlTranslateCallback);
+				have_past_time = 1.0f;
+				glm::vec3 control_position = glm::vec3(10.0f, 3.0f, 15.0f);
+				camera->setPosition(control_position);
+				shader_manager->normal_shader->use();
+				shader_manager->normal_shader->setInt("u_shadow_map", texture_manager->shadow_map);
+				shader_manager->normal_shader->setMat4("u_light_space_mat", lightSpaceMatrix);
+
+				//设置通用矩阵
+				glm::mat4 view = camera->getLookAt();
+				glm::mat4 projection = glm::perspective(glm::radians(camera->m_zoom),
+					(float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+				shader_manager->normal_shader->setMat4("u_view", view);
+				shader_manager->normal_shader->setMat4("u_projection", projection);
+				//设置光照
+				shader_manager->normal_shader->setVec3("u_light_color", sun->getLightStrength());
+				shader_manager->normal_shader->setVec3("u_light_pos", sun->getPosition(have_past_time));
+
+				//draw snow floor
+				//设置纹理
+				shader_manager->normal_shader->setInt("u_texture", texture_manager->oak_planks_texture);
+				glm::mat4 model = glm::translate(glm::mat4(1.0f),
+					control_position + glm::vec3(0.0f, -1.0f, -5.0f));
+				shader_manager->normal_shader->setMat4("u_model", model);
+				shader_manager->normal_shader->setMat4("u_tr_in_model", glm::inverse(glm::transpose(model)));
+				renderer->draw(block->getVertexArray(), shader_manager->normal_shader);
+
+			}
+
+
 
 			glfwSwapBuffers(m_window);
 			glfwPollEvents();
 		}
 	}
-
+	void renderQuad()
+	{
+		if (quadVAO == 0)
+		{
+			float quadVertices[] = {
+				// positions        // texture Coords
+				-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+				-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+				 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+				 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+			};
+			// setup plane VAO
+			glGenVertexArrays(1, &quadVAO);
+			glGenBuffers(1, &quadVBO);
+			glBindVertexArray(quadVAO);
+			glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+			glEnableVertexAttribArray(1);
+			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+		}
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glBindVertexArray(0);
+	}
 
 }

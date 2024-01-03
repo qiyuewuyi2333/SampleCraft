@@ -15,7 +15,7 @@ namespace SampleCraft
 
 	Sun::Sun()
 		:height(50.0f),
-		speed(0.05f)
+		speed(0.5f)
 	{
 
 	}

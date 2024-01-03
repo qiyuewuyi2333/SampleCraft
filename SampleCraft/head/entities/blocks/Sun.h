@@ -19,7 +19,7 @@ namespace SampleCraft
 	private:
 		float height;
 		float speed;
-		glm::vec3 light_strength = glm::vec3(20.0, 20.0, 18.0);
+		glm::vec3 light_strength =  glm::vec3(1.0, 1.0, 0.9);
 		glm::vec3 luna_light_strength = glm::vec3(0.5, 0.5, 0.5);
 
 	public:

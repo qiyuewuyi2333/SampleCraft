@@ -44,6 +44,9 @@ namespace SampleCraft
 		Sun* sun = nullptr;
 		OakLog* oak_log = nullptr;
 		Stair* stair = nullptr;
+
+		bool control_model = false;
+		bool depth_quad_model = false;
 	};
 }
 

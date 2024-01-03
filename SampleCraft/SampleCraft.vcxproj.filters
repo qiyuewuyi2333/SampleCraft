@@ -140,6 +140,8 @@
     <None Include="shaders\block\log\log.vert" />
     <None Include="shaders\shadow\simple_depth.vert" />
     <None Include="shaders\shadow\simple_depth.frag" />
+    <None Include="shaders\shadow_debug\shadow_debug.vert" />
+    <None Include="shaders\shadow_debug\shadow_debug.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\texture\VanillaDefault+1.20.1\assets\minecraft\textures\block\glass.png">

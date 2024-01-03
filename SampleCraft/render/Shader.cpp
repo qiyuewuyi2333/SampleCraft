@@ -33,7 +33,6 @@ namespace SampleCraft
 		const char* fShaderCode = fragmentCode.c_str();
 		//std::cout << vertexCode<<std::endl;
 		//std::cout << fShaderCode<<std::endl;
-		unsigned int vertex, fragment;
 		int success;
 		char infoLog[512];
 
@@ -76,6 +75,11 @@ namespace SampleCraft
 		// delete the shaders as they're linked into our program now and no longer necessary
 		glDeleteShader(vertex);
 		glDeleteShader(fragment);
+	}
+
+	Shader::~Shader()
+	{
+		//glDeleteShader(m_renderer_id);
 	}
 
 	void Shader::use() const
